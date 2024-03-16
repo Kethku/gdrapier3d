@@ -4,8 +4,10 @@ pub mod rigid_body;
 pub mod utils;
 pub mod world;
 
+use std::path::PathBuf;
+
 use godot::{
-    engine::{EditorPlugin, IEditorPlugin, ResourceSaver},
+    engine::{EditorPlugin, IEditorPlugin, ProjectSettings, ResourceSaver},
     prelude::*,
 };
 
