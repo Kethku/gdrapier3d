@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use godot::prelude::*;
 use rapier3d::{
     control::{EffectiveCharacterMovement, KinematicCharacterController},
-    na::UnitQuaternion,
+    na::{Isometry3, UnitQuaternion},
     prelude::*,
 };
 
@@ -163,6 +163,43 @@ impl R3DWorld {
         self.frames.insert(self.current_tick, frame);
         self.current_tick
     }
+
+    #[func]
+    pub fn bodies_within_sphere(&self, position: Vector3, radius: f32) -> Array<Gd<R3DRigidBody>> {
+        let frame = self.frames.get(&self.current_tick).unwrap();
+
+        let mut intersecting_colliders = Vec::new();
+        frame.query_pipeline.intersections_with_shape(
+            &frame.rigid_body_set,
+            &frame.collider_set,
+            &Isometry3::<f32>::translation(position.x, position.y, position.z),
+            &Ball::new(radius),
+            QueryFilter::only_dynamic(),
+            |collider| {
+                intersecting_colliders.push(collider);
+                true
+            },
+        );
+
+        intersecting_colliders
+            .into_iter()
+            .map(|collider_handle| {
+                let collider = frame
+                    .collider_set
+                    .get(collider_handle)
+                    .expect("Collider missing");
+                let body = collider.parent().expect("Collider has no parent");
+                let node_path = frame
+                    .godot_body_node_lookup
+                    .get(&body)
+                    .expect("Body not found");
+                self.base()
+                    .get_node(node_path.into())
+                    .expect("Node not found")
+                    .cast::<R3DRigidBody>()
+            })
+            .collect()
+    }
 }
 
 impl R3DWorld {
@@ -283,6 +320,7 @@ impl R3DWorld {
         character_shape: &dyn Shape,
         character_pos: &Isometry<f32>,
         desired_translation: Vector<f32>,
+
         body_handle: RigidBodyHandle,
     ) -> EffectiveCharacterMovement {
         let frame = self.frames.get(&self.current_tick).unwrap();

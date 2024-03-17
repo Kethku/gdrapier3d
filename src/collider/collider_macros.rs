@@ -19,6 +19,8 @@ macro_rules! collider {
             )+
             #[export]
             restitution: f32,
+            #[export]
+            density: f32,
 
             handle: Option<ColliderHandle>,
 
@@ -73,6 +75,7 @@ macro_rules! collider {
                             .translation(vector![translation.x, translation.y, translation.z])
                             .rotation(vector![rotation.x, rotation.y, rotation.z])
                             .restitution(self.restitution)
+                            .density(self.density)
                             .build(),
                     )
                 };
@@ -98,9 +101,8 @@ macro_rules! collider {
                 pub fn $field_names(&mut self, $field_names: $field_types) {
                     self.$field_names = $field_names;
                     let editor = Engine::singleton().is_editor_hint();
-                    let mut this = self.base().clone().cast::<Self>();
                     if editor {
-                        this.call_deferred("update_immediate_mesh".into(), &[]);
+                        self.update_immediate_mesh();
                     }
                 }
             )+
@@ -114,6 +116,7 @@ macro_rules! collider {
                         $field_names: $field_default,
                     )+
                     restitution: 0.0,
+                    density: 1.0,
                     handle: None,
                     node_3d,
                 }

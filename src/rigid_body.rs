@@ -29,6 +29,7 @@ impl INode3D for R3DRigidBody {
     fn init(node_3d: Base<Node3D>) -> Self {
         Self {
             body_type: BodyType::Dynamic,
+
             world: None,
             handle: None,
             compound_shape: None,
@@ -163,6 +164,14 @@ impl R3DRigidBody {
         let body = world.body(handle).unwrap();
         let velocity = body.linvel();
         Vector3::new(velocity.x, velocity.y, velocity.z)
+    }
+
+    #[func]
+    fn set_linear_velocity(&mut self, velocity: Vector3) {
+        let handle = self.handle.unwrap();
+        let mut world = self.world.as_mut().unwrap().bind_mut();
+        let body = world.body_mut(handle).unwrap();
+        body.set_linvel(vector![velocity.x, velocity.y, velocity.z], true);
     }
 
     #[func]
