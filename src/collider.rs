@@ -1,12 +1,12 @@
 mod collider_macros;
 
 use godot::{
-    engine::{mesh::PrimitiveType, Engine, ImmediateMesh, Mesh, MeshInstance3D},
+    engine::{BoxMesh, CapsuleMesh, CylinderMesh, Engine, Mesh, MeshInstance3D, SphereMesh},
     prelude::*,
 };
 use rapier3d::prelude::*;
 
-use crate::{collider, rigid_body::R3DRigidBody, utils::ImmediateMeshExt};
+use crate::{collider, rigid_body::R3DRigidBody};
 
 pub use self::collider_macros::R3DCollider;
 
@@ -16,8 +16,11 @@ impl R3DCollider for R3DBallCollider {
         SharedShape::ball(self.radius)
     }
 
-    fn draw_debug_geometry(&self, mesh: &mut ImmediateMesh) {
-        mesh.add_ball(self.radius);
+    fn get_debug_mesh(&self) -> Gd<Mesh> {
+        let mut mesh = SphereMesh::new_gd();
+        mesh.set_radius(self.radius);
+        mesh.set_height(self.radius * 2.0);
+        mesh.upcast()
     }
 }
 
@@ -31,8 +34,11 @@ impl R3DCollider for R3DCapsuleCollider {
         SharedShape::capsule_y(self.half_height, self.radius)
     }
 
-    fn draw_debug_geometry(&self, mesh: &mut ImmediateMesh) {
-        mesh.add_capsule(self.radius, self.half_height);
+    fn get_debug_mesh(&self) -> Gd<Mesh> {
+        let mut mesh = CapsuleMesh::new_gd();
+        mesh.set_height(self.half_height * 2.0 + self.radius * 2.0);
+        mesh.set_radius(self.radius);
+        mesh.upcast()
     }
 }
 
@@ -40,7 +46,6 @@ collider!(
     R3DCuboidCollider,
     dimensions: Vector3 = Vector3::new(0.5, 0.5, 0.5)
 );
-
 impl R3DCollider for R3DCuboidCollider {
     fn get_shape(&self) -> SharedShape {
         SharedShape::cuboid(
@@ -50,8 +55,10 @@ impl R3DCollider for R3DCuboidCollider {
         )
     }
 
-    fn draw_debug_geometry(&self, mesh: &mut ImmediateMesh) {
-        mesh.add_cuboid(self.dimensions);
+    fn get_debug_mesh(&self) -> Gd<Mesh> {
+        let mut mesh = BoxMesh::new_gd();
+        mesh.set_size(self.dimensions);
+        mesh.upcast()
     }
 }
 
@@ -60,13 +67,16 @@ collider!(
     radius: f32 = 0.5,
     half_height: f32 = 1.0
 );
-
 impl R3DCollider for R3DCylinderCollider {
     fn get_shape(&self) -> SharedShape {
         SharedShape::cylinder(self.half_height, self.radius)
     }
 
-    fn draw_debug_geometry(&self, mesh: &mut ImmediateMesh) {
-        mesh.add_cylinder(self.radius, self.half_height);
+    fn get_debug_mesh(&self) -> Gd<Mesh> {
+        let mut mesh = CylinderMesh::new_gd();
+        mesh.set_top_radius(self.radius);
+        mesh.set_bottom_radius(self.radius);
+        mesh.set_height(self.half_height * 2.0);
+        mesh.upcast()
     }
 }

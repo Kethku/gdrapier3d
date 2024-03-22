@@ -1,9 +1,10 @@
-use godot::engine::ImmediateMesh;
+use godot::engine::Mesh;
+use godot::prelude::*;
 use rapier3d::prelude::*;
 
 pub trait R3DCollider {
     fn get_shape(&self) -> SharedShape;
-    fn draw_debug_geometry(&self, _immediate_mesh: &mut ImmediateMesh) {}
+    fn get_debug_mesh(&self) -> Gd<Mesh>;
 }
 
 #[macro_export]
@@ -23,40 +24,27 @@ macro_rules! collider {
             density: f32,
 
             handle: Option<ColliderHandle>,
+            mesh_instance: Option<Gd<MeshInstance3D>>,
 
             node_3d: Base<Node3D>,
         }
 
         #[godot_api]
         impl $type_name {
-            fn setup_immediate_mesh(&mut self) {
+            fn setup_debug_mesh(&mut self) {
                 let mut mesh_instance = MeshInstance3D::new_alloc();
-                let immediate_mesh = ImmediateMesh::new_gd().upcast::<Mesh>();
-                mesh_instance.set_mesh(immediate_mesh);
                 mesh_instance.set_name("collider_editor_mesh".into());
-                self.base_mut().add_child(mesh_instance.upcast::<Node>());
+                self.base_mut().add_child(mesh_instance.clone().upcast::<Node>());
+                self.mesh_instance = Some(mesh_instance);
             }
 
-            fn update_immediate_mesh(&mut self) {
-                if let Some(mesh_instance) = self.base()
-                    .find_child_ex("collider_editor_mesh".into())
-                    .owned(false)
-                    .done()
-                {
-                    let mesh_instance = mesh_instance.cast::<MeshInstance3D>();
-
-                    if let Some(immediate_mesh) = mesh_instance.get_mesh() {
-                        let mut immediate_mesh = immediate_mesh.cast::<ImmediateMesh>();
-                        immediate_mesh.clear_surfaces();
-                        immediate_mesh.call(
-                            "surface_begin".into(),
-                            &[
-                                Variant::from(PrimitiveType::LINES),
-                                Variant::nil(),
-                            ],
-                        );
-                        self.draw_debug_geometry(&mut immediate_mesh);
-                        immediate_mesh.surface_end();
+            fn update_debug_mesh(&mut self) {
+                if let Some(mesh_instance) = self.mesh_instance.clone().as_mut() {
+                    if let Ok(material) = try_load::<godot::engine::StandardMaterial3D>("res://utils/Collider.tres") {
+                        mesh_instance.set_mesh(self.get_debug_mesh());
+                        for surface in 0..mesh_instance.get_surface_override_material_count() {
+                            mesh_instance.set_surface_override_material(surface, material.clone().upcast::<godot::engine::Material>());
+                        }
                     }
                 }
             }
@@ -102,7 +90,7 @@ macro_rules! collider {
                     self.$field_names = $field_names;
                     let editor = Engine::singleton().is_editor_hint();
                     if editor {
-                        self.update_immediate_mesh();
+                        self.update_debug_mesh();
                     }
                 }
             )+
@@ -118,14 +106,15 @@ macro_rules! collider {
                     restitution: 0.0,
                     density: 1.0,
                     handle: None,
+                    mesh_instance: None,
                     node_3d,
                 }
             }
 
             fn ready(&mut self) {
                 if Engine::singleton().is_editor_hint() {
-                    self.setup_immediate_mesh();
-                    self.update_immediate_mesh();
+                    self.setup_debug_mesh();
+                    self.update_debug_mesh();
                 }
             }
 
