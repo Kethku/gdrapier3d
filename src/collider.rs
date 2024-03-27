@@ -20,8 +20,8 @@ collider!(
     radius: f32 = 0.5,
 );
 impl R3DCollider for R3DBallCollider {
-    fn get_shape(&self) -> Option<SharedShape> {
-        Some(SharedShape::ball(self.radius))
+    fn get_shape(&self, scale: f32) -> Option<SharedShape> {
+        Some(SharedShape::ball(self.radius * scale))
     }
 
     fn get_debug_mesh(&self) -> Gd<Mesh> {
@@ -40,8 +40,11 @@ collider!(
     half_height: f32 = 1.0,
 );
 impl R3DCollider for R3DCapsuleCollider {
-    fn get_shape(&self) -> Option<SharedShape> {
-        Some(SharedShape::capsule_y(self.half_height, self.radius))
+    fn get_shape(&self, scale: f32) -> Option<SharedShape> {
+        Some(SharedShape::capsule_y(
+            self.half_height * scale,
+            self.radius * scale,
+        ))
     }
 
     fn get_debug_mesh(&self) -> Gd<Mesh> {
@@ -58,11 +61,11 @@ collider!(
     dimensions: Vector3 = Vector3::new(0.5, 0.5, 0.5),
 );
 impl R3DCollider for R3DCuboidCollider {
-    fn get_shape(&self) -> Option<SharedShape> {
+    fn get_shape(&self, scale: f32) -> Option<SharedShape> {
         Some(SharedShape::cuboid(
-            self.dimensions.x / 2.,
-            self.dimensions.y / 2.,
-            self.dimensions.z / 2.,
+            scale * self.dimensions.x / 2.,
+            scale * self.dimensions.y / 2.,
+            scale * self.dimensions.z / 2.,
         ))
     }
 
@@ -81,8 +84,11 @@ collider!(
     half_height: f32 = 1.0,
 );
 impl R3DCollider for R3DCylinderCollider {
-    fn get_shape(&self) -> Option<SharedShape> {
-        Some(SharedShape::cylinder(self.half_height, self.radius))
+    fn get_shape(&self, scale: f32) -> Option<SharedShape> {
+        Some(SharedShape::cylinder(
+            self.half_height * scale,
+            self.radius * scale,
+        ))
     }
 
     fn get_debug_mesh(&self) -> Gd<Mesh> {
@@ -100,12 +106,10 @@ collider!(
     mesh: Gd<Mesh> = Mesh::new_gd(),
 );
 impl R3DCollider for R3DMeshCollider {
-    fn get_shape(&self) -> Option<SharedShape> {
+    fn get_shape(&self, scale: f32) -> Option<SharedShape> {
         if self.mesh.get_surface_count() == 0 {
             return None;
         }
-
-        let scale = self.base().get_scale();
 
         let arrays = self.mesh.surface_get_arrays(0);
 
@@ -115,7 +119,7 @@ impl R3DCollider for R3DMeshCollider {
             .to::<PackedVector3Array>()
             .as_slice()
             .into_iter()
-            .map(|v| scale * *v)
+            .map(|v| *v * scale)
             .map(|v| Point3::new(v.x, v.y, v.z))
             .collect::<Vec<_>>();
 

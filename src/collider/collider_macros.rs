@@ -3,7 +3,7 @@ use godot::prelude::*;
 use rapier3d::prelude::*;
 
 pub trait R3DCollider {
-    fn get_shape(&self) -> Option<SharedShape>;
+    fn get_shape(&self, scale: f32) -> Option<SharedShape>;
     fn get_debug_mesh(&self) -> Gd<Mesh>;
 }
 
@@ -53,10 +53,15 @@ macro_rules! collider {
                 // TODO: This needs to not panic. Should display this as a warning.
                 let mut body = self.base().get_parent().unwrap().cast::<R3DRigidBody>();
 
+                let scale = self.base().get_scale();
                 let translation = self.base().get_position();
                 let rotation = self.base().get_rotation();
 
-                if let Some(shape) = self.get_shape() {
+                if scale.x != scale.y || scale.x != scale.z {
+                    panic!("Non-uniform scaling is not supported for colliders");
+                }
+
+                if let Some(shape) = self.get_shape(scale.x) {
                     self.handle = {
                         let mut body = body.bind_mut();
                         body.add_collider(
