@@ -3,13 +3,13 @@ use godot::prelude::*;
 use rapier3d::prelude::*;
 
 pub trait R3DCollider {
-    fn get_shape(&self) -> SharedShape;
+    fn get_shape(&self) -> Option<SharedShape>;
     fn get_debug_mesh(&self) -> Gd<Mesh>;
 }
 
 #[macro_export]
 macro_rules! collider {
-    ($type_name:ident, $($field_names:ident: $field_types:ident = $field_default:expr),+) => {
+    ($type_name:ident, $(#[export] $field_names:ident: $field_types:ty = $field_default:expr),+,) => {
         #[derive(GodotClass)]
         #[class(tool, base = Node3D)]
         pub struct $type_name {
@@ -56,17 +56,21 @@ macro_rules! collider {
                 let translation = self.base().get_position();
                 let rotation = self.base().get_rotation();
 
-                self.handle = {
-                    let mut body = body.bind_mut();
-                    body.add_collider(
-                        ColliderBuilder::new(self.get_shape())
-                            .translation(vector![translation.x, translation.y, translation.z])
-                            .rotation(vector![rotation.x, rotation.y, rotation.z])
-                            .restitution(self.restitution)
-                            .density(self.density)
-                            .build(),
-                    )
-                };
+                if let Some(shape) = self.get_shape() {
+                    self.handle = {
+                        let mut body = body.bind_mut();
+                        body.add_collider(
+                            ColliderBuilder::new(shape)
+                                .translation(vector![translation.x, translation.y, translation.z])
+                                .rotation(vector![rotation.x, rotation.y, rotation.z])
+                                .restitution(self.restitution)
+                                .density(self.density)
+                                .build(),
+                        )
+                    };
+                } else {
+                    eprintln!("Collider did not return a valid shape");
+                }
             }
 
             fn unregister_collider(&mut self) {

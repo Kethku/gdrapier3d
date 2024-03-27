@@ -19,7 +19,6 @@ pub struct R3DRigidBody {
 
     world: Option<Gd<R3DWorld>>,
     handle: Option<RigidBodyHandle>,
-    compound_shape: Option<SharedShape>,
 
     pub node_3d: Base<Node3D>,
 }
@@ -32,7 +31,6 @@ impl INode3D for R3DRigidBody {
 
             world: None,
             handle: None,
-            compound_shape: None,
             node_3d,
         }
     }
@@ -59,7 +57,6 @@ impl R3DRigidBody {
         if let Some(world) = self.world.as_mut() {
             let mut world = world.bind_mut();
             let handle = world.add_collider_to_body(collider, self.handle.clone().unwrap());
-            self.compound_shape = world.compound_shape(self.handle.unwrap());
             Some(handle)
         } else {
             None
@@ -69,7 +66,6 @@ impl R3DRigidBody {
     pub fn remove_collider(&mut self, collider_handle: ColliderHandle) -> Option<Collider> {
         if let Some(world) = self.world.as_mut() {
             let mut world = world.bind_mut();
-            self.compound_shape = world.compound_shape(self.handle.unwrap());
             world.remove_collider(collider_handle)
         } else {
             None

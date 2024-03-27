@@ -294,26 +294,6 @@ impl R3DWorld {
         )
     }
 
-    pub fn compound_shape(&self, handle: RigidBodyHandle) -> Option<SharedShape> {
-        let frame = self.frames.get(&self.current_tick).unwrap();
-        let mut shapes = Vec::new();
-        if let Some(rigid_body) = frame.rigid_body_set.get(handle) {
-            for collider_handle in rigid_body.colliders() {
-                let collider = &frame.collider_set[*collider_handle];
-                shapes.push((
-                    collider.position_wrt_parent().unwrap().clone(),
-                    collider.shared_shape().clone(),
-                ));
-            }
-        }
-
-        if shapes.is_empty() {
-            None
-        } else {
-            Some(SharedShape::compound(shapes))
-        }
-    }
-
     pub fn move_shape(
         &self,
         dt: f32,
